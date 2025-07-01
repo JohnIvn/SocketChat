@@ -6,7 +6,8 @@
     "start": "electron .",
     "start:server": "node backend/server.js",
     "start:server:dev": "nodemon backend/server.js",
-    "dev": "concurrently \"npm run start:server:dev\" \"npm run start\""
+    "dev": "concurrently \"npm run start:server:dev\" \"npm run start\"",
+    "build": "electron-builder"
   },
   "dependencies": {
     "electron": "^30.0.0",
