@@ -4,67 +4,89 @@
     <meta charset="UTF-8" />
     <title>Socket.IO Chat</title>
     <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="app">
-      <div id="connection-panel">
-        <h1>Socket.IO Chat</h1>
-        <div class="connection-options">
-          <div class="host-form">
-            <h3>Host a Chat Server</h3>
-            <input
-              type="number"
-              id="port-input"
-              placeholder="Port (default: 3000)"
-              value="3000"
-            />
-            <button id="host-btn">Host Chat Server</button>
-            <button id="stop-host-btn" disabled>Stop Hosting</button>
-            <div id="host-status"></div>
-          </div>
+      <div id="sidebar">
+        <div class="logo">Socket<span>Chat</span></div>
 
-          <div class="divider">OR</div>
+        <div class="nav-section">
+          <div class="nav-title">Navigation</div>
+          <div class="nav-item active">Chat</div>
+          <div class="nav-item">Settings</div>
+        </div>
 
-          <div class="connect-form">
-            <h3>Connect to a Server</h3>
-            <input
-              type="text"
-              id="server-address"
-              placeholder="Server address (e.g., http://localhost:3000)"
-            />
-            <button id="connect-btn">Connect</button>
-            <div id="connect-status"></div>
-          </div>
+        <div class="nav-section">
+          <div class="nav-title">Connection</div>
+          <div class="nav-item">Host Server</div>
+          <div class="nav-item">Join Server</div>
         </div>
       </div>
 
-      <div id="chat-panel" style="display: none">
-        <div class="chat-header">
-          <div class="connection-status">
-            Status: <span id="status">Disconnected</span>
+      <div id="main-content">
+        <div id="connection-panel">
+          <h1>Socket.IO Chat</h1>
+          <div class="connection-options">
+            <div class="host-form">
+              <h3>Host a Chat Server</h3>
+              <input
+                type="number"
+                id="port-input"
+                placeholder="Port (default: 3000)"
+                value="3000"
+              />
+              <button id="host-btn">Host Chat Server</button>
+              <button id="stop-host-btn" disabled>Stop Hosting</button>
+              <div id="host-status"></div>
+            </div>
+
+            <div class="divider">OR</div>
+
+            <div class="connect-form">
+              <h3>Connect to a Server</h3>
+              <input
+                type="text"
+                id="server-address"
+                placeholder="Server address (e.g., http://localhost:3000)"
+              />
+              <button id="connect-btn">Connect</button>
+              <div id="connect-status"></div>
+            </div>
           </div>
-          <button id="disconnect-btn">Disconnect</button>
         </div>
 
-        <div class="username-form">
-          <input
-            type="text"
-            id="username-input"
-            placeholder="Enter your username"
-          />
-          <button id="set-username">Set Username</button>
-        </div>
+        <div id="chat-panel">
+          <div class="chat-header">
+            <div class="connection-status">
+              Status: <span id="status">Disconnected</span>
+            </div>
+            <button id="disconnect-btn">Disconnect</button>
+          </div>
 
-        <div id="messages"></div>
+          <div class="username-form">
+            <input
+              type="text"
+              id="username-input"
+              placeholder="Enter your username"
+            />
+            <button id="set-username">Set Username</button>
+          </div>
 
-        <div class="message-input">
-          <input
-            type="text"
-            id="message-input"
-            placeholder="Type your message"
-            disabled
-          />
-          <button id="send-btn" disabled>Send</button>
+          <div id="messages"></div>
+
+          <div class="message-input">
+            <input
+              type="text"
+              id="message-input"
+              placeholder="Type your message"
+              disabled
+            />
+            <button id="send-btn" disabled>Send</button>
+          </div>
         </div>
       </div>
     </div>
@@ -99,13 +121,13 @@
           );
 
           hostStatus.textContent = `Server running on port ${actualPort}`;
-          hostStatus.style.color = "green";
+          hostStatus.style.color = "var(--spotify-green)";
           stopHostBtn.disabled = false;
 
           await connectToServer(`http://localhost:${actualPort}`);
         } catch (error) {
           hostStatus.textContent = `Error: ${error.message}`;
-          hostStatus.style.color = "red";
+          hostStatus.style.color = "#ff4d4d";
           console.error("Error hosting server:", error);
         } finally {
           hostBtn.disabled = false;
@@ -117,7 +139,7 @@
           stopHostBtn.disabled = true;
           await ipcRenderer.invoke("stop-server");
           hostStatus.textContent = "Server stopped";
-          hostStatus.style.color = "black";
+          hostStatus.style.color = "var(--spotify-light-gray)";
           stopHostBtn.disabled = true;
         } catch (error) {
           console.error("Error stopping server:", error);
@@ -168,7 +190,7 @@
         try {
           connectBtn.disabled = true;
           connectStatus.textContent = "Connecting...";
-          connectStatus.style.color = "blue";
+          connectStatus.style.color = "var(--spotify-green)";
 
           ipcRenderer.send("connect-to-server", address);
 
@@ -177,14 +199,14 @@
               if (data.status === "connected") {
                 ipcRenderer.off("connection-status", listener);
                 connectStatus.textContent = "Connected successfully";
-                connectStatus.style.color = "green";
+                connectStatus.style.color = "var(--spotify-green)";
                 resolve();
               } else if (data.status === "error") {
                 ipcRenderer.off("connection-status", listener);
                 connectStatus.textContent = `Error: ${
                   data.error || "Connection failed"
                 }`;
-                connectStatus.style.color = "red";
+                connectStatus.style.color = "#ff4d4d";
                 reject(new Error(data.error || "Connection failed"));
               }
             };
@@ -192,7 +214,7 @@
           });
 
           connectionPanel.style.display = "none";
-          chatPanel.style.display = "block";
+          chatPanel.style.display = "flex";
         } catch (error) {
           console.error("Connection error:", error);
         } finally {
@@ -203,24 +225,24 @@
       ipcRenderer.on("connection-status", (event, data) => {
         statusElement.textContent = data.status;
         if (data.status === "connected") {
-          statusElement.style.color = "green";
+          statusElement.style.color = "var(--spotify-green)";
         } else if (data.status === "disconnected") {
-          statusElement.style.color = "red";
+          statusElement.style.color = "#ff4d4d";
         } else {
-          statusElement.style.color = "black";
+          statusElement.style.color = "var(--spotify-light-gray)";
         }
       });
 
       ipcRenderer.on("server-status", (event, data) => {
         if (data.status === "running") {
           hostStatus.textContent = `Server running on port ${data.port}`;
-          hostStatus.style.color = "green";
+          hostStatus.style.color = "var(--spotify-green)";
         } else if (data.status === "stopped") {
           hostStatus.textContent = "Server stopped";
-          hostStatus.style.color = "black";
+          hostStatus.style.color = "var(--spotify-light-gray)";
         } else if (data.status === "error") {
           hostStatus.textContent = `Error: ${data.error}`;
-          hostStatus.style.color = "red";
+          hostStatus.style.color = "#ff4d4d";
         }
       });
 
