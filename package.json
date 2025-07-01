@@ -1,0 +1,14 @@
+{
+  "name": "socket-chat",
+  "type": "module",
+  "main": "frontend/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev:server": "node backend/server.js"
+  },
+  "dependencies": {
+    "electron": "^30.0.0",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
+  }
+}
