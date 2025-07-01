@@ -10,21 +10,40 @@
       <div id="connection-panel">
         <h1>Socket.IO Chat</h1>
         <div class="connection-options">
-          <button id="host-btn">Host Chat Server</button>
+          <div class="host-form">
+            <h3>Host a Chat Server</h3>
+            <input
+              type="number"
+              id="port-input"
+              placeholder="Port (default: 3000)"
+              value="3000"
+            />
+            <button id="host-btn">Host Chat Server</button>
+            <button id="stop-host-btn" disabled>Stop Hosting</button>
+            <div id="host-status"></div>
+          </div>
+
+          <div class="divider">OR</div>
+
           <div class="connect-form">
+            <h3>Connect to a Server</h3>
             <input
               type="text"
               id="server-address"
               placeholder="Server address (e.g., http://localhost:3000)"
             />
             <button id="connect-btn">Connect</button>
+            <div id="connect-status"></div>
           </div>
         </div>
       </div>
 
       <div id="chat-panel" style="display: none">
-        <div class="connection-status">
-          Status: <span id="status">Disconnected</span>
+        <div class="chat-header">
+          <div class="connection-status">
+            Status: <span id="status">Disconnected</span>
+          </div>
+          <button id="disconnect-btn">Disconnect</button>
         </div>
 
         <div class="username-form">
@@ -53,54 +72,159 @@
     <script>
       const { ipcRenderer } = require("electron");
 
-      document.getElementById("host-btn").addEventListener("click", () => {
-        ipcRenderer.send("host-server");
-      });
+      const hostBtn = document.getElementById("host-btn");
+      const stopHostBtn = document.getElementById("stop-host-btn");
+      const connectBtn = document.getElementById("connect-btn");
+      const disconnectBtn = document.getElementById("disconnect-btn");
+      const portInput = document.getElementById("port-input");
+      const serverAddressInput = document.getElementById("server-address");
+      const hostStatus = document.getElementById("host-status");
+      const connectStatus = document.getElementById("connect-status");
+      const statusElement = document.getElementById("status");
+      const usernameInput = document.getElementById("username-input");
+      const setUsernameBtn = document.getElementById("set-username");
+      const messageInput = document.getElementById("message-input");
+      const sendBtn = document.getElementById("send-btn");
+      const messagesDiv = document.getElementById("messages");
+      const connectionPanel = document.getElementById("connection-panel");
+      const chatPanel = document.getElementById("chat-panel");
 
-      document.getElementById("connect-btn").addEventListener("click", () => {
-        const address = document.getElementById("server-address").value;
-        if (address) {
-          ipcRenderer.send("connect-to-server", address);
+      hostBtn.addEventListener("click", async () => {
+        try {
+          hostBtn.disabled = true;
+          const port = portInput.value || 3000;
+          const actualPort = await ipcRenderer.invoke(
+            "host-server",
+            parseInt(port)
+          );
+
+          hostStatus.textContent = `Server running on port ${actualPort}`;
+          hostStatus.style.color = "green";
+          stopHostBtn.disabled = false;
+
+          await connectToServer(`http://localhost:${actualPort}`);
+        } catch (error) {
+          hostStatus.textContent = `Error: ${error.message}`;
+          hostStatus.style.color = "red";
+          console.error("Error hosting server:", error);
+        } finally {
+          hostBtn.disabled = false;
         }
       });
 
-      document.getElementById("set-username").addEventListener("click", () => {
-        const username = document.getElementById("username-input").value;
+      stopHostBtn.addEventListener("click", async () => {
+        try {
+          stopHostBtn.disabled = true;
+          await ipcRenderer.invoke("stop-server");
+          hostStatus.textContent = "Server stopped";
+          hostStatus.style.color = "black";
+          stopHostBtn.disabled = true;
+        } catch (error) {
+          console.error("Error stopping server:", error);
+        }
+      });
+
+      connectBtn.addEventListener("click", async () => {
+        const address = serverAddressInput.value.trim();
+        if (address) {
+          await connectToServer(address);
+        }
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        ipcRenderer.send("connect-to-server", null);
+        chatPanel.style.display = "none";
+        connectionPanel.style.display = "block";
+      });
+
+      setUsernameBtn.addEventListener("click", () => {
+        const username = usernameInput.value.trim();
         if (username) {
           ipcRenderer.send("set-username", username);
-          document.getElementById("username-input").disabled = true;
-          document.getElementById("set-username").disabled = true;
-          document.getElementById("message-input").disabled = false;
-          document.getElementById("send-btn").disabled = false;
+          usernameInput.disabled = true;
+          setUsernameBtn.disabled = true;
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          messageInput.focus();
         }
       });
 
-      document.getElementById("send-btn").addEventListener("click", () => {
-        const message = document.getElementById("message-input").value;
+      sendBtn.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      function sendMessage() {
+        const message = messageInput.value.trim();
         if (message) {
           ipcRenderer.send("send-message", message);
-          document.getElementById("message-input").value = "";
+          messageInput.value = "";
+        }
+      }
+
+      async function connectToServer(address) {
+        try {
+          connectBtn.disabled = true;
+          connectStatus.textContent = "Connecting...";
+          connectStatus.style.color = "blue";
+
+          ipcRenderer.send("connect-to-server", address);
+
+          await new Promise((resolve, reject) => {
+            const listener = (event, data) => {
+              if (data.status === "connected") {
+                ipcRenderer.off("connection-status", listener);
+                connectStatus.textContent = "Connected successfully";
+                connectStatus.style.color = "green";
+                resolve();
+              } else if (data.status === "error") {
+                ipcRenderer.off("connection-status", listener);
+                connectStatus.textContent = `Error: ${
+                  data.error || "Connection failed"
+                }`;
+                connectStatus.style.color = "red";
+                reject(new Error(data.error || "Connection failed"));
+              }
+            };
+            ipcRenderer.on("connection-status", listener);
+          });
+
+          connectionPanel.style.display = "none";
+          chatPanel.style.display = "block";
+        } catch (error) {
+          console.error("Connection error:", error);
+        } finally {
+          connectBtn.disabled = false;
+        }
+      }
+
+      ipcRenderer.on("connection-status", (event, data) => {
+        statusElement.textContent = data.status;
+        if (data.status === "connected") {
+          statusElement.style.color = "green";
+        } else if (data.status === "disconnected") {
+          statusElement.style.color = "red";
+        } else {
+          statusElement.style.color = "black";
         }
       });
 
-      document
-        .getElementById("message-input")
-        .addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            document.getElementById("send-btn").click();
-          }
-        });
-
-      ipcRenderer.on("connection-status", (event, status) => {
-        document.getElementById("status").textContent = status;
-        if (status === "connected") {
-          document.getElementById("connection-panel").style.display = "none";
-          document.getElementById("chat-panel").style.display = "block";
+      ipcRenderer.on("server-status", (event, data) => {
+        if (data.status === "running") {
+          hostStatus.textContent = `Server running on port ${data.port}`;
+          hostStatus.style.color = "green";
+        } else if (data.status === "stopped") {
+          hostStatus.textContent = "Server stopped";
+          hostStatus.style.color = "black";
+        } else if (data.status === "error") {
+          hostStatus.textContent = `Error: ${data.error}`;
+          hostStatus.style.color = "red";
         }
       });
 
       ipcRenderer.on("new-message", (event, data) => {
-        const messages = document.getElementById("messages");
         const messageElement = document.createElement("div");
         messageElement.className = "message";
 
@@ -114,8 +238,8 @@
 
         messageElement.appendChild(userElement);
         messageElement.appendChild(textElement);
-        messages.appendChild(messageElement);
-        messages.scrollTop = messages.scrollHeight;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
       });
     </script>
   </body>

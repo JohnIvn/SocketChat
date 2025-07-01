@@ -1,8 +1,10 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { io } from "socket.io-client";
+import { startServer, stopServer } from "../Backend/server.js";
 
 let mainWindow;
 let socket;
+let serverInstance;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -35,10 +37,22 @@ app.on("activate", () => {
   }
 });
 
-import { ipcMain } from "electron";
-
-ipcMain.on("host-server", () => {
-  connectToServer("http://localhost:3000");
+ipcMain.handle("host-server", async (event, port = 3000) => {
+  try {
+    if (serverInstance) {
+      await stopServer();
+    }
+    serverInstance = await startServer(port);
+    mainWindow.webContents.send("server-status", { status: "running", port });
+    return port;
+  } catch (error) {
+    console.error("Error starting server:", error);
+    mainWindow.webContents.send("server-status", {
+      status: "error",
+      error: error.message,
+    });
+    throw error;
+  }
 });
 
 ipcMain.on("connect-to-server", (event, serverAddress) => {
@@ -57,22 +71,60 @@ ipcMain.on("set-username", (event, username) => {
   }
 });
 
+ipcMain.handle("stop-server", async () => {
+  try {
+    await stopServer();
+    serverInstance = null;
+    mainWindow.webContents.send("server-status", { status: "stopped" });
+    return true;
+  } catch (error) {
+    console.error("Error stopping server:", error);
+    throw error;
+  }
+});
+
 function connectToServer(serverAddress) {
   if (socket) {
     socket.disconnect();
+    socket = null;
   }
 
-  socket = io(serverAddress);
+  try {
+    socket = io(serverAddress, {
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+      timeout: 2000,
+    });
 
-  socket.on("connect", () => {
-    mainWindow.webContents.send("connection-status", "connected");
-  });
+    socket.on("connect", () => {
+      console.log("Connected to server:", serverAddress);
+      mainWindow.webContents.send("connection-status", { status: "connected" });
+    });
 
-  socket.on("disconnect", () => {
-    mainWindow.webContents.send("connection-status", "disconnected");
-  });
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      mainWindow.webContents.send("connection-status", {
+        status: "error",
+        error: error.message,
+      });
+    });
 
-  socket.on("chat message", (data) => {
-    mainWindow.webContents.send("new-message", data);
-  });
+    socket.on("disconnect", (reason) => {
+      console.log("Disconnected:", reason);
+      mainWindow.webContents.send("connection-status", {
+        status: "disconnected",
+        reason,
+      });
+    });
+
+    socket.on("chat message", (data) => {
+      mainWindow.webContents.send("new-message", data);
+    });
+  } catch (error) {
+    console.error("Error creating socket:", error);
+    mainWindow.webContents.send("connection-status", {
+      status: "error",
+      error: error.message,
+    });
+  }
 }
