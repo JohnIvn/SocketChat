@@ -1,17 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>LAN Chat</title>
-  <style>
-    body { font-family: sans-serif; }
-    #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
-  </style>
-</head>
 <body>
-  <h2>LAN Chat</h2>
-  <div id="messages"></div>
-  <input id="input" placeholder="Type message..." />
-  <button onclick="send()">Send</button>
+  <h2>LAN Chat Control Panel</h2>
+
+  <div>
+    <label>
+      <input type="radio" name="mode" value="host" checked /> Host
+    </label>
+    <label> <input type="radio" name="mode" value="connect" /> Connect </label>
+  </div>
+
+  <div id="connectFields" style="display: none; margin-top: 10px">
+    <input id="ipAddress" placeholder="Enter server IP (e.g. 192.168.1.5)" />
+  </div>
+
+  <button onclick="startConnection()">Start</button>
+
+  <hr />
+
+  <div id="chatControls" style="display: none">
+    <input id="eventName" placeholder="Event name" />
+    <input id="eventData" placeholder="Event data" />
+    <button onclick="emitCustomEvent()">Emit</button>
+    <button onclick="disconnect()">Disconnect</button>
+  </div>
+
+  <div id="messages" style="margin-top: 20px"></div>
+
   <script type="module" src="renderer.js"></script>
 </body>
-</html>
