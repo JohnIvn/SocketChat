@@ -3,12 +3,16 @@
   "type": "module",
   "main": "frontend/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev:server": "node backend/server.js"
+    "start": "concurrently \"npm run dev:server\" \"npm run dev:electron\"",
+    "dev:server": "node backend/server.js",
+    "dev:electron": "electron ."
   },
   "dependencies": {
     "electron": "^30.0.0",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }

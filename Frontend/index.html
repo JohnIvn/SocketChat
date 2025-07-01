@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LAN Chat</title>
+  <style>
+    body { font-family: sans-serif; }
+    #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>LAN Chat</h2>
+  <div id="messages"></div>
+  <input id="input" placeholder="Type message..." />
+  <button onclick="send()">Send</button>
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>
