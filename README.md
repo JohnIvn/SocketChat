@@ -20,13 +20,15 @@ A simple peer-to-peer chat application for local networks using Socket.IO, enabl
 
 - [Requirements](#requirements)
 - [Features](#features)
+- [Release](#release)
 - [Installation](#installation)
+- [Structure](#structure)
 - [Technologies Used](#technologies-used)
 - [License](#license)
 
 ---
 
-## REQUIREMENTS
+## Requirements
 
 To run this project locally, ensure you have the following installed:
 
@@ -42,6 +44,12 @@ To run this project locally, ensure you have the following installed:
 - Username Selection – Users can choose and display their own names.
 - Cross-Platform – Works on any device with a browser and access to the LAN.
 - Fast and Lightweight – Minimal latency and low system resource usage.
+
+---
+
+## Release
+
+- Alternatively you can download the `.zip` file from the [Releases](https://github.com/JohnIvn/SocketChat/releases) section.
 
 ---
 
@@ -76,6 +84,16 @@ yarn
 ```bash
    cd SocketChat
    yarn dev
+```
+
+---
+
+## Structure
+
+```bash
+/
+├── Backend/
+└── Frontend/                             
 ```
 
 ---
